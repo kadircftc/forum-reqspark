@@ -5,7 +5,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const { roleMiddleware } = require('../middleware/roleMiddleware');
 
 // List categories
-router.get('/', async (req, res) => {
+router.get('/',authMiddleware, async (req, res) => {
 	const categories = await db('categories').select('*').orderBy('created_at', 'desc');
 	res.json({ categories });
 });

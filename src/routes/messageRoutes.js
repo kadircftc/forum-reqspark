@@ -6,7 +6,7 @@ const { verifyAccessToken } = require('../services/tokenService');
 const { verificationMiddleware } = require('../middleware/verificationMiddleware');
 
 // List messages by thread
-router.post('/list-by-thread', async (req, res) => {
+router.post('/list-by-thread',authMiddleware, async (req, res) => {
 	const { thread_id, page = 1 } = req.body;
 	if (!thread_id) return res.status(400).json({ error: 'thread_id zorunlu' });
 	const pageSize = 10;

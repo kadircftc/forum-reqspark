@@ -10,6 +10,9 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const threadRoutes = require('./routes/threadRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const adminCategoryRoutes = require('./routes/adminCategoryRoutes');
+const adminThreadRoutes = require('./routes/adminThreadRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,6 +38,9 @@ app.use('/categories', categoryRoutes);
 app.use('/threads', threadRoutes);
 app.use('/messages', messageRoutes);
 app.use('/reports', reportRoutes);
+app.use('/admin/categories', adminCategoryRoutes);
+app.use('/admin/threads', adminThreadRoutes);
+app.use('/user', userRoutes);
 app.get('/', (req, res) => {
   res.json({
     message: 'Forum ReqSpark API',
