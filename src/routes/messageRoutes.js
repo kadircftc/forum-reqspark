@@ -71,10 +71,52 @@ router.post('/', authMiddleware, verificationMiddleware, async (req, res) => {
 
 		const userId = req.user.sub;
 		const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || null;
+		
+		// Mesajı oluştur
 		const [msg] = await db('messages')
 			.insert({ thread_id, user_id: userId, content, ip_address: ipAddress })
 			.returning(['id', 'thread_id', 'user_id', 'content', 'ip_address', 'created_at']);
-		const response = { ...msg, is_mine: true, align: 'right' };
+
+		// Detaylı bilgileri al (thread, kategori, kullanıcı)
+		const messageDetails = await db('messages as m')
+			.leftJoin('threads as t', 't.id', 'm.thread_id')
+			.leftJoin('categories as c', 'c.id', 't.category_id')
+			.leftJoin('users as u', 'u.id', 'm.user_id')
+			.where('m.id', msg.id)
+			.select(
+				'm.id', 'm.thread_id', 'm.user_id', 'm.content', 'm.created_at',
+				't.title as thread_title',
+				'c.id as category_id', 'c.name as category_name',
+				'u.username'
+			)
+			.first();
+		
+		const response = { 
+			...messageDetails,
+			is_mine: true, 
+			align: 'right' 
+		};
+
+		// Global broadcast - mesaj gönderen hariç herkese gönder
+		const io = req.app.get('io');
+		if (io) {
+			const broadcastMessage = {
+				...messageDetails,
+				is_mine: false, // Diğer kullanıcılar için
+				align: 'left'
+			};
+			
+			// Tüm bağlı socket'lere gönder (mesaj gönderen hariç)
+			let sentCount = 0;
+			io.sockets.sockets.forEach((socket) => {
+				if (socket.userId && socket.userId !== userId) {
+					socket.emit('new_message', broadcastMessage);
+					sentCount++;
+				}
+			});
+			console.log(`Mesaj broadcast edildi - Gönderen: ${userId}, Gönderilen: ${sentCount}`);
+		}
+
 		return res.status(201).json({ message: response });
 	} catch (e) {
 		return res.status(400).json({ error: e.message });

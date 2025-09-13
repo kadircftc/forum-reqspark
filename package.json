@@ -11,20 +11,26 @@
     "migrate:make": "knex migrate:make",
     "db:seed": "knex seed:run"
   },
-  "keywords": ["forum", "nodejs", "postgresql", "express"],
+  "keywords": [
+    "forum",
+    "nodejs",
+    "postgresql",
+    "express"
+  ],
   "author": "Kadir",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "pg": "^8.11.3",
-    "knex": "^3.0.1",
-    "dotenv": "^16.3.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "helmet": "^7.1.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.13"
+    "knex": "^3.0.1",
+    "nodemailer": "^6.9.13",
+    "pg": "^8.11.3",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

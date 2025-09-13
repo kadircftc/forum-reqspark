@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -15,6 +17,13 @@ const adminThreadRoutes = require('./routes/adminThreadRoutes');
 const userRoutes = require('./routes/userRoutes');
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -101,9 +110,40 @@ process.on('SIGINT', () => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server ${PORT} portunda çalışıyor`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+// Socket.io bağlantı yönetimi - Global mesajlaşma
+io.on('connection', (socket) => {
+  console.log('Yeni kullanıcı bağlandı:', socket.id);
+
+  // Token'dan kullanıcı ID'sini al ve socket'e ayarla
+  const token = socket.handshake.auth?.token;
+  if (token) {
+    try {
+      const jwt = require('jsonwebtoken');
+      const payload = jwt.verify(token, process.env.JWT_SECRET);
+      socket.userId = payload.sub;
+      console.log(`Kullanıcı ${socket.id} token'dan ID alındı: ${socket.userId}`);
+    } catch (error) {
+      console.log(`Token geçersiz: ${socket.id}`, error.message);
+      socket.disconnect();
+    }
+  } else {
+    console.log(`Token bulunamadı: ${socket.id}`);
+    socket.disconnect();
+  }
+
+  // Bağlantı kesildiğinde
+  socket.on('disconnect', () => {
+    console.log('Kullanıcı bağlantısı kesildi:', socket.id);
+  });
 });
 
-module.exports = app;
+// Socket.io instance'ını global olarak erişilebilir yap
+app.set('io', io);
+
+server.listen(PORT, () => {
+  console.log(`🚀 Server ${PORT} portunda çalışıyor`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`🔌 Socket.io aktif - Global mesajlaşma`);
+});
+
+module.exports = { app, server, io };
