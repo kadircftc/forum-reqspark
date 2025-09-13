@@ -38,13 +38,23 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('Socket bağlantısı kuruldu:', this.socket.id);
+      console.log('✅ Socket bağlantısı kuruldu:', this.socket.id);
+      console.log('🌐 Server URL:', serverUrl);
       this.isConnected = true;
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Socket bağlantısı kesildi');
+    this.socket.on('disconnect', (reason) => {
+      console.log('❌ Socket bağlantısı kesildi, sebep:', reason);
       this.isConnected = false;
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.log('❌ Socket bağlantı hatası:', error);
+      this.isConnected = false;
+    });
+
+    this.socket.on('error', (error) => {
+      console.log('❌ Socket hatası:', error);
     });
 
     return this.socket;

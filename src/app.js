@@ -32,7 +32,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001", "https://forum.reqspark.com", "*"],
+  origin: ["http://localhost:3000","http://localhost:5175", "http://localhost:3001", "https://forum.reqspark.com", "*"],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
