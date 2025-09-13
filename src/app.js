@@ -116,18 +116,20 @@ io.on('connection', (socket) => {
 
   // Token'dan kullanıcı ID'sini al ve socket'e ayarla
   const token = socket.handshake.auth?.token;
+  console.log(`Socket ${socket.id} bağlandı, token:`, token ? 'var' : 'yok');
+  
   if (token) {
     try {
-      const jwt = require('jsonwebtoken');
-      const payload = jwt.verify(token, process.env.JWT_SECRET);
+      const { verifyAccessToken } = require('./services/tokenService');
+      const payload = verifyAccessToken(token);
       socket.userId = payload.sub;
-      console.log(`Kullanıcı ${socket.id} token'dan ID alındı: ${socket.userId}`);
+      console.log(`✅ Kullanıcı ${socket.id} token'dan ID alındı: ${socket.userId}`);
     } catch (error) {
-      console.log(`Token geçersiz: ${socket.id}`, error.message);
+      console.log(`❌ Token geçersiz: ${socket.id}`, error.message);
       socket.disconnect();
     }
   } else {
-    console.log(`Token bulunamadı: ${socket.id}`);
+    console.log(`❌ Token bulunamadı: ${socket.id}`);
     socket.disconnect();
   }
 

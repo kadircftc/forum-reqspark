@@ -21,6 +21,7 @@ class SocketService {
       this.disconnect();
     }
 
+    console.log('Socket bağlantısı kuruluyor, token:', token ? 'var' : 'yok');
     this.socket = io('http://localhost:3000', {
       auth: {
         token: token

@@ -106,15 +106,23 @@ router.post('/', authMiddleware, verificationMiddleware, async (req, res) => {
 				align: 'left'
 			};
 			
+			// Debug: Tüm socket'leri kontrol et
+			const allSockets = Array.from(io.sockets.sockets.values());
+			console.log(`📊 Toplam bağlı socket: ${allSockets.length}`);
+			allSockets.forEach((socket, index) => {
+				console.log(`Socket ${index}: ID=${socket.id}, userId=${socket.userId}`);
+			});
+			
 			// Tüm bağlı socket'lere gönder (mesaj gönderen hariç)
 			let sentCount = 0;
 			io.sockets.sockets.forEach((socket) => {
 				if (socket.userId && socket.userId !== userId) {
 					socket.emit('new_message', broadcastMessage);
 					sentCount++;
+					console.log(`📤 Mesaj gönderildi: ${socket.id} (userId: ${socket.userId})`);
 				}
 			});
-			console.log(`Mesaj broadcast edildi - Gönderen: ${userId}, Gönderilen: ${sentCount}`);
+			console.log(`📨 Mesaj broadcast edildi - Gönderen: ${userId}, Gönderilen: ${sentCount}`);
 		}
 
 		return res.status(201).json({ message: response });
