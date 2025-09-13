@@ -22,10 +22,19 @@ class SocketService {
     }
 
     console.log('Socket bağlantısı kuruluyor, token:', token ? 'var' : 'yok');
-    this.socket = io('http://localhost:3000', {
+    
+    // EC2 için IP adresini değiştirin
+    const serverUrl = process.env.NODE_ENV === 'production' 
+      ? 'http://YOUR_EC2_IP:3000'  // EC2 IP adresinizi buraya yazın
+      : 'http://localhost:3000';
+    
+    this.socket = io(serverUrl, {
       auth: {
         token: token
-      }
+      },
+      transports: ['websocket', 'polling'],
+      timeout: 20000,
+      forceNew: true
     });
 
     this.socket.on('connect', () => {
