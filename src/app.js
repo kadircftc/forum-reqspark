@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const db = require('./database/connection');
 const { payloadCryptoMiddleware } = require('./middleware/payloadCrypto');
 const authRoutes = require('./routes/authRoutes');
+const forgotPasswordRoutes = require('./routes/forgotPasswordRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const threadRoutes = require('./routes/threadRoutes');
 const messageRoutes = require('./routes/messageRoutes');
@@ -20,7 +21,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://forum.reqspark.com", "*"],
+    origin: ["http://localhost:3000", "http://localhost:5175", "http://localhost:3001", "https://forum.reqspark.com", "*"],
     methods: ["GET", "POST"],
     credentials: true
   },
@@ -32,7 +33,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ["http://localhost:3000","http://localhost:5175", "http://localhost:3001", "https://forum.reqspark.com", "*"],
+  origin: ["http://localhost:3000", "http://localhost:5175", "http://localhost:3001", "https://forum.reqspark.com", "*"],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
@@ -51,6 +52,7 @@ app.use(limiter);
 
 // Routes
 app.use('/auth', authRoutes);
+app.use('/auth', forgotPasswordRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/threads', threadRoutes);
 app.use('/messages', messageRoutes);

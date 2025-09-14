@@ -27,7 +27,10 @@ function decryptAesGcm({ payload, tag }) {
 
 function encryptAesGcm(obj) {
 	const { key, iv } = getKeyIv();
-	const plaintext = JSON.stringify(obj);
+	const plaintext = JSON.stringify({
+		...obj,
+		timestamp: Date.now()
+	});
 	const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
 	let encrypted = cipher.update(plaintext, 'utf8');
 	encrypted = Buffer.concat([encrypted, cipher.final()]);
@@ -42,7 +45,7 @@ function payloadCryptoMiddleware(req, res, next) {
 	console.log('🔍 Middleware çalışıyor - URL:', req.url);
 	console.log('🔍 Content-Type:', req.get('Content-Type'));
 	console.log('🔍 Body var mı:', !!req.body);
-	
+
 	// İstek: varsa payload+tag'i çöz ve req.body'ye yay
 	if (req.is('application/json') && req.body && typeof req.body.payload === 'string' && typeof req.body.tag === 'string') {
 		console.log('🔓 Payload+tag bulundu, şifre çözülüyor...');
@@ -63,7 +66,9 @@ function payloadCryptoMiddleware(req, res, next) {
 	res.json = (body) => {
 		console.log('🔒 Response şifreleniyor...');
 		try {
-			const encrypted = encryptAesGcm(body);
+			// Timestamp ekle
+			const bodyWithTimestamp = { ...body, timestamp: Date.now() };
+			const encrypted = encryptAesGcm(bodyWithTimestamp);
 			console.log('✅ Response şifreleme başarılı');
 			return originalJson(encrypted);
 		} catch (e) {
