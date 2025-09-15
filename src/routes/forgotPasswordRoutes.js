@@ -40,7 +40,7 @@ router.post('/forgot-password', async (req, res) => {
     });
 
     // Email gönder
-    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5175'}/reset-password?token=${token}`;
+    const resetLink = `${process.env.FRONTEND_URL || 'https://forum.reqspark.com'}/reset-password?token=${token}`;
     
     const emailContent = {
       to: email,
