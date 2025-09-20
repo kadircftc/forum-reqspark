@@ -62,17 +62,23 @@ router.post('/with-message', authMiddleware, roleMiddleware('admin'), async (req
 
 // Add message to admin thread
 router.post('/add-message', authMiddleware, roleMiddleware('admin'), async (req, res) => {
+	try{
+	
 	const { admin_thread_id, content } = req.body;
 	if (!admin_thread_id || !content) return res.status(400).json({ error: 'admin_thread_id ve content zorunlu' });
 	
 	// Admin thread var mı kontrol et
 	const thread = await db('admin_threads').where({ id: admin_thread_id }).first();
 	if (!thread) return res.status(404).json({ error: 'Admin thread bulunamadı' });
-	
+	console.log(thread);
 	const userId = req.user.sub;
 	const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || null;
 	const [msg] = await db('admin_messages').insert({ admin_thread_id, user_id: userId, content, ip_address: ipAddress }).returning(['id', 'admin_thread_id', 'user_id', 'content', 'ip_address', 'created_at']);
 	res.status(201).json({ message: { ...msg, is_mine: true, align: 'right' } });
+	} catch (e) {
+		console.log(e);
+		return res.status(400).json({ error: e.message });
+	}
 });
 
 // List admin messages by thread (public)

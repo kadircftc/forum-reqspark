@@ -4,11 +4,11 @@ const db = require('../database/connection');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { verificationMiddleware } = require('../middleware/verificationMiddleware');
 const { roleMiddleware } = require('../middleware/roleMiddleware');
+const { createValidationMiddleware } = require('../middleware/validationMiddleware');
 
 // List threads by category
-router.post('/list-by-category',authMiddleware, async (req, res) => {
+router.post('/list-by-category', authMiddleware, createValidationMiddleware('thread.listByCategory'), async (req, res) => {
 	const { category_id } = req.body;
-	if (!category_id) return res.status(400).json({ error: 'category_id zorunlu' });
 	
 	const threads = await db('threads as t')
 		.leftJoin('messages as m', 'm.thread_id', 't.id')
@@ -22,7 +22,7 @@ router.post('/list-by-category',authMiddleware, async (req, res) => {
 });
 
 // Search + pagination (POST; read operation)
-router.post('/search',authMiddleware, async (req, res) => {
+router.post('/search', authMiddleware, createValidationMiddleware('thread.search'), async (req, res) => {
 	const { q, category_id, page = 1, limit = 50 } = req.body || {};
 	const safeLimit = Math.min(Number(limit) || 50, 100);
 	const offset = ((Number(page) || 1) - 1) * safeLimit;
@@ -57,27 +57,24 @@ router.post('/search',authMiddleware, async (req, res) => {
 });
 
 // Show thread
-router.post('/show',authMiddleware, async (req, res) => {
+router.post('/show', authMiddleware, createValidationMiddleware('thread.show'), async (req, res) => {
 	const { id } = req.body;
-	if (!id) return res.status(400).json({ error: 'id zorunlu' });
 	const thread = await db('threads').where({ id }).first();
 	if (!thread) return res.status(404).json({ error: 'Thread bulunamadı' });
 	res.json({ thread });
 });
 
 // Create thread (verified)
-router.post('/', authMiddleware, verificationMiddleware, async (req, res) => {
+router.post('/', authMiddleware, verificationMiddleware, createValidationMiddleware('thread.create'), async (req, res) => {
 	const { category_id, title } = req.body;
-	if (!category_id || !title) return res.status(400).json({ error: 'category_id ve title zorunlu' });
 	const userId = req.user.sub;
 	const [thr] = await db('threads').insert({ category_id, user_id: userId, title }).returning(['id', 'category_id', 'user_id', 'title', 'created_at']);
 	res.status(201).json({ thread: thr });
 });
 
 // Create thread + first message (verified)
-router.post('/with-message', authMiddleware, verificationMiddleware, async (req, res) => {
+router.post('/with-message', authMiddleware, verificationMiddleware, createValidationMiddleware('thread.createWithMessage'), async (req, res) => {
 	const { category_id, title, content } = req.body;
-	if (!category_id || !title || !content) return res.status(400).json({ error: 'category_id, title ve content zorunlu' });
 	const userId = req.user.sub;
 	const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || null;
 
@@ -90,14 +87,14 @@ router.post('/with-message', authMiddleware, verificationMiddleware, async (req,
 		return res.status(201).json({ thread: thr, message: { ...msg, is_mine: true, align: 'right' } });
 	} catch (e) {
 		await trx.rollback();
+		console.log(e);
 		return res.status(400).json({ error: e.message });
 	}
 });
 
 // Delete thread (owner or admin)
-router.post('/delete', authMiddleware, async (req, res) => {
+router.post('/delete', authMiddleware, createValidationMiddleware('thread.delete'), async (req, res) => {
 	const { id } = req.body;
-	if (!id) return res.status(400).json({ error: 'id zorunlu' });
 	const userId = req.user.sub;
 	const thread = await db('threads').where({ id }).first();
 	if (!thread) return res.status(404).json({ error: 'Thread bulunamadı' });

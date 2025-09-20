@@ -25,7 +25,7 @@ router.post('/check-username', authLimiter, async (req, res) => {
 		.first();
 	
 	if (user) {
-		return res.status(404).json({ error: 'Kullanıcı adı kullanılabilir değil!', available: false });
+		return res.status(200).json({ available: false });
 	}
 	
 	return res.status(200).json({ available: true });

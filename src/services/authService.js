@@ -2,16 +2,17 @@ const bcrypt = require('bcryptjs');
 const db = require('../database/connection');
 const { sendMail } = require('../config/email');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('./tokenService');
+const welcomeMailService = require('./welcomeMailService');
 
 function generate6DigitCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-async function isBlocked(email, ipAddress) {
+async function isBlocked(email, ipAddress,username) {
   const now = db.raw('NOW()');
   const [blockByEmail] = await db('user_blocks')
     .where(function() {
-      this.where('blocked_email', email);
+      this.where('blocked_email', email).orWhere('blocked_username', username);
     })
     .andWhere(function() {
       this.whereNull('blocked_until').orWhere('blocked_until', '>', db.fn.now());
@@ -102,15 +103,39 @@ async function verifyCode({ email, code }) {
   // İsteğe bağlı: kodu sil
   await db('verification_codes').where({ id: vCode.id }).del();
 
+  // Hoş geldin maili gönder (asenkron olarak)
+  try {
+    await welcomeMailService.sendWelcomeMail({
+      email: user.email,
+      username: user.username
+    });
+    console.log(`📧 Hoş geldin maili kuyruğa eklendi: ${user.email}`);
+  } catch (mailError) {
+    console.error('❌ Hoş geldin maili gönderme hatası:', mailError.message);
+    // Mail hatası verify işlemini engellemez
+  }
+
   return { verified: true, attempts_left: vCode.attempts_left };
 }
 
-async function login({ email, password, ipAddress }) {
-  const user = await db('users').where({ email }).first();
-  if (!user) throw new Error('Geçersiz e-posta veya şifre');
+async function login({ email, username, password, ipAddress }) {
+  let user;
+  
+  // Email veya username ile giriş kontrolü
+  if (email && email.includes('@')) {
+    // Email ile giriş
+    user = await db('users').where({ email }).first();
+    if (!user) throw new Error('Geçersiz e-posta veya şifre');
+  } else if (username) {
+    // Username ile giriş
+    user = await db('users').where({ username }).first();
+    if (!user) throw new Error('Geçersiz kullanıcı adı veya şifre');
+  } else {
+    throw new Error('Email veya kullanıcı adı gerekli');
+  }
 
   // Ban listesi kontrolü
-  const blocked = await isBlocked(email, ipAddress);
+  const blocked = await isBlocked(user.email, ipAddress, user.username);
   if (blocked || user.blocked) {
     throw new Error('Hesabınız veya IP adresiniz engellenmiş');
   }

@@ -4,11 +4,11 @@ const db = require('../database/connection');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { verifyAccessToken } = require('../services/tokenService');
 const { verificationMiddleware } = require('../middleware/verificationMiddleware');
+const { createValidationMiddleware } = require('../middleware/validationMiddleware');
 
 // List messages by thread
-router.post('/list-by-thread',authMiddleware, async (req, res) => {
+router.post('/list-by-thread', authMiddleware, createValidationMiddleware('message.listByThread'), async (req, res) => {
 	const { thread_id, page = 1 } = req.body;
-	if (!thread_id) return res.status(400).json({ error: 'thread_id zorunlu' });
 	const pageSize = 10;
 	const safePage = Math.max(1, Number(page) || 1);
 	const offset = (safePage - 1) * pageSize;
@@ -58,10 +58,9 @@ router.post('/list-by-thread',authMiddleware, async (req, res) => {
 });
 
 // Create message (verified)
-router.post('/', authMiddleware, verificationMiddleware, async (req, res) => {
+router.post('/', authMiddleware, verificationMiddleware, createValidationMiddleware('message.create'), async (req, res) => {
 	try {
 		const { thread_id, content } = req.body;
-		if (!thread_id || !content) return res.status(400).json({ error: 'thread_id ve content zorunlu' });
 
 		// Thread var mı kontrol et
 		const thread = await db('threads').where({ id: thread_id }).first();

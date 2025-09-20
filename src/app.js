@@ -15,7 +15,11 @@ const messageRoutes = require('./routes/messageRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const adminCategoryRoutes = require('./routes/adminCategoryRoutes');
 const adminThreadRoutes = require('./routes/adminThreadRoutes');
+const adminBlockRoutes = require('./routes/adminBlockRoutes');
+const adminAnnouncementRoutes = require('./routes/adminAnnouncementRoutes');
+const adminMailQueueRoutes = require('./routes/adminMailQueueRoutes');
 const userRoutes = require('./routes/userRoutes');
+const announcementRoutes = require('./routes/announcementRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -59,7 +63,11 @@ app.use('/messages', messageRoutes);
 app.use('/reports', reportRoutes);
 app.use('/admin/categories', adminCategoryRoutes);
 app.use('/admin/threads', adminThreadRoutes);
+app.use('/admin/blocks', adminBlockRoutes);
+app.use('/admin/announcements', adminAnnouncementRoutes);
+app.use('/admin/mail-queue', adminMailQueueRoutes);
 app.use('/user', userRoutes);
+app.use('/announcements', announcementRoutes);
 app.get('/', (req, res) => {
   res.json({
     message: 'Forum ReqSpark API',
@@ -152,10 +160,24 @@ io.on('connection', (socket) => {
 // Socket.io instance'ını global olarak erişilebilir yap
 app.set('io', io);
 
+// Mail kuyruğu otomatik işleme (her 5 dakikada bir)
+const mailQueueService = require('./services/mailQueueService');
+setInterval(async () => {
+  try {
+    const result = await mailQueueService.processMailQueue(20);
+    if (result.processed > 0) {
+      console.log(`📧 Mail kuyruğu işlendi: ${result.processed} mail (${result.sent} başarılı, ${result.failed} başarısız)`);
+    }
+  } catch (error) {
+    console.error('❌ Mail kuyruğu işleme hatası:', error.message);
+  }
+}, 1 * 60 * 1000); // 5 dakika
+
 server.listen(PORT, () => {
   console.log(`🚀 Server ${PORT} portunda çalışıyor`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔌 Socket.io aktif - Global mesajlaşma`);
+  console.log(`📧 Mail kuyruğu otomatik işleme aktif (5 dakikada bir)`);
 });
 
 module.exports = { app, server, io };
